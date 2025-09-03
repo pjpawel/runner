@@ -5,7 +5,7 @@ Universal runner with builder objects to run async, threaded or group commands
 
 ### Install
 ```shell
-pip install runner_pjpawel
+pip install runner-pjpawel
 ```
 
 ### Build runner
