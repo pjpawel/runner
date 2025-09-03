@@ -3,13 +3,14 @@ from enum import StrEnum, auto
 
 from .command import BaseCommand
 from .counter import Counter
+from .error import RunnerRuntimeError
 from .progress_bar import ProgressBar
 
 
 class RunnerStrategy(StrEnum):
-    Restart = auto()
-    Stop = auto()
-    Omit = auto()
+    RESTART = auto()
+    STOP = auto()
+    OMIT = auto()
 
 
 class Runner:
@@ -22,8 +23,7 @@ class Runner:
         self,
         commands: list[BaseCommand] = [],
         progress_sleep: float = 0.1,
-        show_progress_bar: bool = True,
-        **kwargs
+        show_progress_bar: bool = True
     ):
         """
         Initialize Runner class.
@@ -51,17 +51,26 @@ class Runner:
         :return:
         """
         self.reset()
-        await asyncio.gather(
-            self._run_progress_bar(),
-            self._run_all_commands()
-        )
+        if self.show_progress_bar:
+            all_results = await asyncio.gather(
+                self._run_progress_bar(),
+                self._run_all_commands()
+            )
+            result = all_results[1]
+        else:
+            result = await self._run_all_commands()
+        #TODO: do sth with result
 
     def reset(self):
         Counter.reset()
 
     async def _run_all_commands(self):
-        for command in self.commands:
-            command.process()
+        try:
+            for command in self.commands:
+                command.process()
+        except RunnerRuntimeError as rre:
+            print(rre)
+            # TODO: write to file
 
     async def _run_progress_bar(self):
         progress_bar = ProgressBar(max_value=self.works)
@@ -73,6 +82,3 @@ class Runner:
 
     def set_env_vars(self):
         pass
-
-
-
