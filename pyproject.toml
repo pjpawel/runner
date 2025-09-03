@@ -1,5 +1,5 @@
 [project]
-name = "runner_pjpawel"
+name = "runner-pjpawel"
 version = "0.1.0"
 authors = [
   { name="pjpawel", email="pjpawel@proton.me" },
@@ -17,7 +17,7 @@ license-files = ["LICEN[CS]E*"]
 
 [project.urls]
 Homepage = "https://github.com/pjpawel/runner"
-Issues = "https://github.com/pypa/pjpawel/runner"
+Issues = "https://github.com/pjpawel/runner/issues"
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
