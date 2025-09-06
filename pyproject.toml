@@ -1,6 +1,6 @@
 [project]
 name = "runner-pjpawel"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   { name="pjpawel", email="pjpawel@proton.me" },
 ]
@@ -14,10 +14,12 @@ classifiers = [
 ]
 license = "Apache-2.0"
 license-files = ["LICEN[CS]E*"]
+dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/pjpawel/runner"
 Issues = "https://github.com/pjpawel/runner/issues"
+
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"

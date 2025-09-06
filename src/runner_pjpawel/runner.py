@@ -1,6 +1,6 @@
 import asyncio
 
-from .command import BaseCommand, RunnerRuntimeError, ErrorStrategy
+from .command import BaseCommand, RunnerRuntimeError
 from .counter import Counter
 from .progress_bar import ProgressBar
 
