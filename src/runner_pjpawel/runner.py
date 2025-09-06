@@ -1,16 +1,8 @@
 import asyncio
-from enum import StrEnum, auto
 
-from .command import BaseCommand
+from .command import BaseCommand, RunnerRuntimeError, ErrorStrategy
 from .counter import Counter
-from .error import RunnerRuntimeError
 from .progress_bar import ProgressBar
-
-
-class RunnerStrategy(StrEnum):
-    RESTART = auto()
-    STOP = auto()
-    OMIT = auto()
 
 
 class Runner:
@@ -27,8 +19,6 @@ class Runner:
     ):
         """
         Initialize Runner class.
-        :param commands:
-        :param kwargs:
         """
         self.commands = commands
         self.works = sum(command.number_of_works for command in commands)
