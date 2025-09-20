@@ -1,10 +1,15 @@
+import pytest
+
 from src.runner_pjpawel.command.base import (
     ShellCommand,
     CommandResult,
     CommandResultLevel,
+    RunnerRuntimeError,
 )
+from .util import RuntimeExceptionCommand
 
 
+# CommandResult tests
 def test_command_result_ok():
     msg = "dummy"
     result = CommandResult.new_ok(msg)
@@ -39,6 +44,9 @@ def test_command_result_str():
     assert str(result) == "CommandResult(0)"
 
 
+# ShellCommand tests
+
+
 def test_shell_command_uname():
     shell = ShellCommand("uname")
     res = shell.process()
@@ -46,3 +54,9 @@ def test_shell_command_uname():
     assert res.level == CommandResultLevel.OK
     assert res.msg == "Linux\n"
     assert res.additional_info == [""]
+
+
+def test_runtime_error_thrown():
+    cmd = RuntimeExceptionCommand()
+    with pytest.raises(RunnerRuntimeError):
+        cmd.process()
