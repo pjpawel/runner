@@ -18,7 +18,9 @@ class CommandResult:
     msg: str | None
     additional_info: list
 
-    def __init__(self, level: CommandResultLevel, msg: str | None = None, additional_info=None):
+    def __init__(
+        self, level: CommandResultLevel, msg: str | None = None, additional_info=None
+    ):
         self.level = level
         self.msg = msg
         if additional_info is None:
@@ -112,7 +114,9 @@ class BaseCommand:
                         return result
                     case ErrorStrategy.RESTART:
                         timer.stop()
-                        self._log(logging.INFO, f"Restarting process, attempt {iteration}")
+                        self._log(
+                            logging.INFO, f"Restarting process, attempt {iteration}"
+                        )
                         self._log_timer(timer)
                         return self.process(iteration + 1)
                     case ErrorStrategy.STOP:
@@ -148,7 +152,9 @@ class BaseCommand:
             self.logger.log(level, self._format_log(message))
 
     def _format_log(self, message: str):
-        return f"Class: %s, Work: %d: %s".format(self.__class__.__name__, Counter.get_count(), message)
+        return f"Class: %s, Work: %d: %s".format(
+            self.__class__.__name__, Counter.get_count(), message
+        )
 
 
 class ShellCommand(BaseCommand):
@@ -270,7 +276,9 @@ class ThreadCommand(BaseCommand):
     args: list = []
     timeout: float | None
 
-    def __init__(self, command: Callable, args=None, timeout: float | None = None, **kwargs):
+    def __init__(
+        self, command: Callable, args=None, timeout: float | None = None, **kwargs
+    ):
         super().__init__(**kwargs)
         if args is None:
             args = []
@@ -285,6 +293,7 @@ class ThreadCommand(BaseCommand):
         if thread.is_alive():
             return CommandResult.new_error("Thread timeout")
         return CommandResult.new_ok()
+
 
 # As additional feature to BaseCommand?
 class ConditionCommand(BaseCommand):

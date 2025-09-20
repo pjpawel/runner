@@ -1,4 +1,8 @@
-from src.runner_pjpawel.command.base import ShellCommand, CommandResult, CommandResultLevel
+from src.runner_pjpawel.command.base import (
+    ShellCommand,
+    CommandResult,
+    CommandResultLevel,
+)
 
 
 def test_command_result_ok():
