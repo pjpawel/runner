@@ -4,7 +4,7 @@ import threading
 from enum import IntEnum, StrEnum, auto
 from typing import Callable, Self
 
-from .counter import Counter
+from ..counter import Counter, Timer
 
 
 class CommandResultLevel(IntEnum):
@@ -15,10 +15,10 @@ class CommandResultLevel(IntEnum):
 
 class CommandResult:
     level: CommandResultLevel
-    msg: str
+    msg: str | None
     additional_info: list
 
-    def __init__(self, level: CommandResultLevel, msg: str, additional_info=None):
+    def __init__(self, level: CommandResultLevel, msg: str | None = None, additional_info=None):
         self.level = level
         self.msg = msg
         if additional_info is None:
@@ -26,15 +26,15 @@ class CommandResult:
         self.additional_info = additional_info
 
     @staticmethod
-    def new_ok(msg: str, additional_info=None):
+    def new_ok(msg: str | None = None, additional_info=None):
         return CommandResult(CommandResultLevel.OK, msg, additional_info)
 
     @staticmethod
-    def new_error(msg: str, additional_info=None):
+    def new_error(msg: str | None = None, additional_info=None):
         return CommandResult(CommandResultLevel.ERROR, msg, additional_info)
 
     @staticmethod
-    def new_critical(msg: str, additional_info=None):
+    def new_critical(msg: str | None = None, additional_info=None):
         return CommandResult(CommandResultLevel.CRITICAL, msg, additional_info)
 
     def __str__(self):
@@ -78,41 +78,55 @@ class BaseCommand:
             kwargs.get("error_strategy", "stop").lower()
         )
 
-    def process(self):
-        # TODO: implement logging and record time
-        result = None
-        i = 1
-        while i <= 3:
-            try:
-                result = self._do_work()
-            except RunnerRuntimeError as ree:
-                raise ree
-            except Exception as e:
-                result = CommandResult(
-                    CommandResultLevel.ERROR, "Unexcepted exception caught", [e]
-                )
-            match result.level:
-                case CommandResultLevel.OK:
-                    self._increment_counter()
-                    return result
-                case CommandResultLevel.ERROR:
-                    match self.error_strategy:
-                        case ErrorStrategy.OMIT:
-                            # TODO: log omitting
-                            return result
-                        case ErrorStrategy.RESTART:
-                            # TODO: log omitting
-                            i += 1
-                        case ErrorStrategy.STOP:
-                            # TODO: log stop
-                            return result
-                case CommandResultLevel.CRITICAL:
-                    raise RunnerRuntimeError(result, i)
-        if result is None:
+    def process(self, iteration: int = 1):
+        if iteration > 3:
             return CommandResult.new_critical("Cannot run process. ", {"command": self})
-        return result
+        timer = Timer()
+        try:
+            result = self._do_work()
+            if result is None:
+                result = CommandResult.new_ok()
+            timer.add_checkpoint("Done working")
+        except RunnerRuntimeError as ree:
+            timer.add_checkpoint("RuntimeException thrown")
+            timer.stop()
+            self._log(logging.ERROR, f"Runner stoped due to error {ree}")
+            raise ree
+        except Exception as e:
+            result = CommandResult(
+                CommandResultLevel.ERROR, "Unexcepted exception caught", [e]
+            )
+        match result.level:
+            case CommandResultLevel.OK:
+                self._increment_counter()
+                timer.stop()
+                self._log(logging.DEBUG, "Result OK")
+                self._log_timer(timer)
+                return result
+            case CommandResultLevel.ERROR:
+                match self.error_strategy:
+                    case ErrorStrategy.OMIT:
+                        timer.stop()
+                        self._log(logging.INFO, "Omitting error")
+                        self._log_timer(timer)
+                        return result
+                    case ErrorStrategy.RESTART:
+                        timer.stop()
+                        self._log(logging.INFO, f"Restarting process, attempt {iteration}")
+                        self._log_timer(timer)
+                        return self.process(iteration + 1)
+                    case ErrorStrategy.STOP:
+                        timer.stop()
+                        self._log(logging.INFO, f"Process stopped with result {result}")
+                        self._log_timer(timer)
+                        return result
+            case CommandResultLevel.CRITICAL:
+                timer.stop()
+                self._log(logging.CRITICAL, f"Process critical error {result}")
+                self._log_timer(timer)
+                raise RunnerRuntimeError(result, iteration)
 
-    def _do_work(self) -> CommandResult:
+    def _do_work(self) -> CommandResult | None:
         raise NotImplementedError("Subclasses must implement this method")
 
     def _increment_counter(self):
@@ -121,6 +135,9 @@ class BaseCommand:
     def get_number_of_works(self) -> int:
         return 1
 
+    def _log_timer(self, timer: Timer):
+        self._log(logging.DEBUG, f"Timer: {timer}")
+
     def _log(self, level: int, message: str):
         if self.logger is None:
             if self.logger_name:
@@ -128,7 +145,10 @@ class BaseCommand:
             else:
                 return
         if self.log_level <= level:
-            self.logger.log(level, message)
+            self.logger.log(level, self._format_log(message))
+
+    def _format_log(self, message: str):
+        return f"Class: %s, Work: %d: %s".format(self.__class__.__name__, Counter.get_count(), message)
 
 
 class ShellCommand(BaseCommand):
@@ -137,7 +157,7 @@ class ShellCommand(BaseCommand):
         self.cwd = cwd
         self.cmd = cmd
 
-    def _do_work(self):
+    def _do_work(self) -> CommandResult | None:
         process = subprocess.Popen(
             self.cmd,
             cwd=self.cwd,
@@ -146,7 +166,7 @@ class ShellCommand(BaseCommand):
             text=True,
         )
         stdout, stderr = process.communicate()
-        # self._log(logging.INFO,) # TODO: logging
+        self._log(logging.DEBUG, f"Stdout: {stdout}, stderr: {stderr}")
         level = (
             CommandResultLevel.OK
             if process.returncode == 0
@@ -181,7 +201,7 @@ class GroupCommand(BaseCommand):
     def get_number_of_works(self) -> int:
         return sum(command.number_of_works for command in self.commands)
 
-    def _do_work(self):
+    def _do_work(self) -> CommandResult | None:
         # TODO: log
         i = 0
         try:
@@ -216,7 +236,7 @@ class ParallelCommand(GroupCommand):
         super().__init__(**kwargs)
         self.commands = commands
 
-    def _do_work(self):
+    def _do_work(self) -> CommandResult | None:
         threads = []
         for command in self.commands:
             thread = threading.Thread(target=command.process)
@@ -240,26 +260,32 @@ class CyclicCommand(BaseCommand):
         self.command = command
         self.cycles = cycles
 
-    def _do_work(self):
+    def _do_work(self) -> CommandResult | None:
         for _ in range(self.cycles):
             self.command.process()  # TODO: handle error
 
 
 class ThreadCommand(BaseCommand):
+    cmd: Callable
     args: list = []
+    timeout: float | None
 
-    def __init__(self, command, args=None, **kwargs):
+    def __init__(self, command: Callable, args=None, timeout: float | None = None, **kwargs):
         super().__init__(**kwargs)
         if args is None:
             args = []
         self.cmd = command
         self.args = args
+        self.timeout = timeout
 
-    def _do_work(self):
+    def _do_work(self) -> CommandResult | None:
         thread = threading.Thread(target=self.cmd, args=self.args)
         thread.start()
-        thread.join()
+        thread.join(self.timeout)
+        if thread.is_alive():
+            return CommandResult.new_error("Thread timeout")
+        return CommandResult.new_ok()
 
-
+# As additional feature to BaseCommand?
 class ConditionCommand(BaseCommand):
     pass

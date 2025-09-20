@@ -29,6 +29,11 @@ class Checkpoint:
         self.check_time = check_time
         self.description = description
 
+    def __str__(self):
+        if self.description:
+            return f"Checkpoint({self.check_time}, '{self.description}')"
+        return f"Checkpoint({self.check_time})"
+
 
 class Timer:
     """
@@ -41,6 +46,7 @@ class Timer:
 
     def __init__(self):
         self.start_timestamp = time()
+        self.checkpoints = []
 
     def stop(self):
         if self.end is not None:
@@ -49,6 +55,9 @@ class Timer:
 
     def add_checkpoint(self, description: str | None = None):
         self.checkpoints.append(Checkpoint(time() - self.start_timestamp, description))
+
+    def __str__(self):
+        return f"Timer({self.start_timestamp}, {self.end}, {self.checkpoints})"
 
 
 # Exceptions

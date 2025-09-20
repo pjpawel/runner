@@ -1,7 +1,7 @@
 import pytest
 
 from src.runner_pjpawel import Runner
-from src.runner_pjpawel.command import ShellCommand
+from src.runner_pjpawel.command.base import ShellCommand
 
 
 def test_runner_sync():

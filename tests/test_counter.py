@@ -48,9 +48,9 @@ def test_timer_checkpoint():
     timer.add_checkpoint()
     timestamp_check = time()
 
-    diff_check = timestamp_check - timestamp
-    check_time = timer.checkpoints[0].check_time
     assert len(timer.checkpoints) == 1
+    check_time = timer.checkpoints[0].check_time
+    diff_check = timestamp_check - timestamp
     assert diff_check > check_time
     assert diff_check < check_time + 0.01
 
