@@ -90,25 +90,25 @@ class ProgressBar:
         filled_length = int(self.width * current // self.max_value)
 
         # Create the progress bar visual
-        bar_fill = '█' * filled_length
-        bar_empty = '░' * (self.width - filled_length)
+        bar_fill = "█" * filled_length
+        bar_empty = "░" * (self.width - filled_length)
         bar = bar_fill + bar_empty
 
         # Color coding based on percentage
         if percentage < 30:
-            color_code = '\033[91m'  # Red
+            color_code = "\033[91m"  # Red
         elif percentage < 70:
-            color_code = '\033[93m'  # Yellow
+            color_code = "\033[93m"  # Yellow
         else:
-            color_code = '\033[92m'  # Green
+            color_code = "\033[92m"  # Green
 
-        reset_code = '\033[0m'  # Reset color
+        reset_code = "\033[0m"  # Reset color
 
         # Create the display string
-        display_str = f'\r{prefix}: |{color_code}{bar}{reset_code}| {current}/{self.max_value} ({percentage:.1f}%) {suffix}'
+        display_str = f"\r{prefix}: |{color_code}{bar}{reset_code}| {current}/{self.max_value} ({percentage:.1f}%) {suffix}"
 
         # Print without newline to allow updating
-        print(display_str, end='', flush=True)
+        print(display_str, end="", flush=True)
 
     def display_line(self, prefix="Progress", suffix="Complete"):
         """Display the progress bar with a newline (for final display)"""
@@ -118,4 +118,4 @@ class ProgressBar:
 
 def clear_screen():
     """Clear the terminal screen"""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")

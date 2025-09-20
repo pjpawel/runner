@@ -1,5 +1,6 @@
 from src.runner_pjpawel.command import CommandResult, CommandResultLevel, ShellCommand
 
+
 def test_command_result_ok():
     msg = "dummy"
     result = CommandResult.new_ok(msg)
@@ -7,6 +8,7 @@ def test_command_result_ok():
     assert result.level == CommandResultLevel.OK
     assert result.msg == msg
     assert result.additional_info == []
+
 
 def test_command_result_error():
     msg = "dummy1"
@@ -25,11 +27,13 @@ def test_command_result_critical():
     assert result.msg == msg
     assert result.additional_info == []
 
+
 def test_command_result_str():
     msg = "dummy"
     result = CommandResult.new_ok(msg)
 
     assert str(result) == "CommandResult(0)"
+
 
 def test_shell_command_uname():
     shell = ShellCommand("uname")
@@ -37,6 +41,4 @@ def test_shell_command_uname():
 
     assert res.level == CommandResultLevel.OK
     assert res.msg == "Linux\n"
-    assert res.additional_info == ['']
-
-
+    assert res.additional_info == [""]

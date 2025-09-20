@@ -13,15 +13,14 @@ class Runner:
 
     def __init__(
         self,
-        commands: list[BaseCommand] = [],
+        commands: list[BaseCommand] | None = None,
         progress_sleep: float = 0.1,
-        show_progress_bar: bool = True
+        show_progress_bar: bool = True,
     ):
-        """
-        Initialize Runner class.
-        """
-        self.commands = commands
-        self.works = sum(command.number_of_works for command in commands)
+        if commands is None:
+            self.commands = []
+        else:
+            self.commands = commands
         self.progress_sleep = progress_sleep
         self.show_progress_bar = show_progress_bar
 
@@ -40,16 +39,18 @@ class Runner:
         Run commands with progress_bar
         :return:
         """
+        num_works = self.get_num_of_works()
+        if num_works == 0:
+            raise NoWorksDefinedException()
         self.reset()
         if self.show_progress_bar:
             all_results = await asyncio.gather(
-                self._run_progress_bar(),
-                self._run_all_commands()
+                self._run_progress_bar(num_works), self._run_all_commands()
             )
             result = all_results[1]
         else:
             result = await self._run_all_commands()
-        #TODO: do sth with result
+        # TODO: do sth with result
 
     def reset(self):
         Counter.reset()
@@ -62,13 +63,21 @@ class Runner:
             print(rre)
             # TODO: write to file
 
-    async def _run_progress_bar(self):
-        progress_bar = ProgressBar(max_value=self.works)
+    async def _run_progress_bar(self, num_works: int):
+        progress_bar = ProgressBar(max_value=num_works)
         progress_bar.reset()
-        while Counter.get_count() <= self.works:
+        while Counter.get_count() <= num_works:
             progress_bar.display()
             await asyncio.sleep(self.progress_sleep)
         progress_bar.complete()
 
     def set_env_vars(self):
         pass
+
+    def get_num_of_works(self) -> int:
+        return sum(command.get_number_of_works() for command in self.commands)
+
+
+# Exceptions
+class NoWorksDefinedException(Exception):
+    pass
