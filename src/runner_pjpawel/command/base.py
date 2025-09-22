@@ -65,12 +65,17 @@ class ErrorStrategy(StrEnum):
     OMIT = auto()
 
 
+class ConditionResult(IntEnum):
+    OK = 0
+    STOP = 1
+
 class BaseCommand:
     number_of_works: int
     log_level: int
     logger_name: str | None
     error_strategy: ErrorStrategy
     error_callback: Callable[[Self, CommandResult], Self | None] | None
+    condition: Callable[[], CommandResult] | None # TODO: change signature
 
     def __init__(self, **kwargs):
         self.logger = None
@@ -80,7 +85,10 @@ class BaseCommand:
             kwargs.get("error_strategy", "stop").lower()
         )
 
-    def process(self, iteration: int = 1):
+    def process(self):
+        self._do_process()
+
+    def _do_process(self, iteration: int = 1):
         if iteration > 3:
             return CommandResult.new_critical("Cannot run process. ", {"command": self})
         timer = Timer()
@@ -293,8 +301,3 @@ class ThreadCommand(BaseCommand):
         if thread.is_alive():
             return CommandResult.new_error("Thread timeout")
         return CommandResult.new_ok()
-
-
-# As additional feature to BaseCommand?
-class ConditionCommand(BaseCommand):
-    pass
